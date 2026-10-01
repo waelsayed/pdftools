@@ -53,7 +53,14 @@ window.I18N = {
     "content.ol2": "أعد ترتيب الصور بالسحب، وابدأ التدوير أو الحذف عند الحاجة.",
     "content.ol3": "اختر حجم الصفحة والهوامش والجودة حسب ما تحتاجه.",
     "content.ol4": "اضغط زر التحويل، وسيبدأ ملف PDF في التحميل مباشرة.",
-    "content.p3": "الأداة مجانية تماماً، ولا تحتاج إلى تسجيل أو رفع أي بيانات. تعمل على هاتفك وحاسوبك بنفس الطريقة، وتدعم العربية والإنجليزية."
+    "content.p3": "الأداة مجانية تماماً، ولا تحتاج إلى تسجيل أو رفع أي بيانات. تعمل على هاتفك وحاسوبك بنفس الطريقة، وتدعم العربية والإنجليزية.",
+    "lightbox.rotate": "تدوير",
+    "lightbox.delete": "حذف",
+    "lightbox.ok": "موافق",
+   "lightbox.preview": "معاينة الصورة",
+   "settings.fileName": "اسم ملف PDF",
+"settings.fileNamePlaceholder": "ImagesToPdf",
+"settings.fileNameHint": "اتركه فارغاً لاستخدام الاسم الافتراضي. سيُضاف التاريخ والوقت تلقائياً.",
   },
   en: {
     "app.name": "Image to PDF",
@@ -108,7 +115,14 @@ window.I18N = {
     "content.ol2": "Reorder by dragging; rotate or delete as needed.",
     "content.ol3": "Pick page size, margins, and quality.",
     "content.ol4": "Click convert — the PDF downloads instantly.",
-    "content.p3": "Free, no sign-up, no data uploads. Works the same on phones and desktops, in Arabic and English."
+    "content.p3": "Free, no sign-up, no data uploads. Works the same on phones and desktops, in Arabic and English.",
+    "lightbox.rotate": "Rotate",
+"lightbox.delete": "Delete",
+"lightbox.ok": "OK",
+"lightbox.preview": "Preview image",
+"settings.fileName": "PDF file name",
+"settings.fileNamePlaceholder": "ImagesToPdf",
+"settings.fileNameHint": "Leave empty to use the default name. Date and time will be added automatically.",
   }
 };
 
@@ -137,5 +151,10 @@ window.applyI18n = function () {
   document.querySelectorAll('[data-i18n]').forEach(function (el) {
     var key = el.getAttribute('data-i18n');
     el.textContent = window.t(key);
+  });
+  // Also translate placeholders
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(function (el) {
+    var key = el.getAttribute('data-i18n-placeholder');
+    el.setAttribute('placeholder', window.t(key));
   });
 };

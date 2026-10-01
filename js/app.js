@@ -28,9 +28,24 @@
   var orientationEl = $('orientation');
   var marginsEl = $('margins');
   var qualityEl = $('quality');
+  var fileNameEl = $('fileName');
   var langToggle = $('langToggle');
   var themeToggle = $('themeToggle');
   var yearEl = $('year');
+
+  // Lightbox
+  var lightbox = $('lightbox');
+  var lbImage = $('lbImage');
+  var lbFilename = $('lbFilename');
+  var lbCounter = $('lbCounter');
+  var lbClose = $('lbClose');
+  var lbPrev = $('lbPrev');
+  var lbNext = $('lbNext');
+  var lbRotate = $('lbRotate');
+  var lbDelete = $('lbDelete');
+  var lbOk = $('lbOk');
+  var lbImageWrap = $('lbImageWrap');
+  var currentPreviewId = null;
 
   // ---------- Constants ----------
   var A4 = { w: 595.28, h: 841.89 };
@@ -38,12 +53,14 @@
   var MARGINS = { none: 0, small: 18, large: 42 };
   var QUALITY_MAP = { high: 0.92, medium: 0.75, low: 0.55 };
   var ACCEPTED = ['image/jpeg', 'image/png', 'image/webp'];
+  var DEFAULT_BASENAME = 'ImagesToPdf';
 
   // ---------- Init ----------
   function init() {
     applyThemeOnLoad();
     applyLangOnLoad();
     bindEvents();
+    bindLightboxEvents();
     initSortable();
     if (yearEl) yearEl.textContent = new Date().getFullYear();
     updateVisibility();
@@ -107,6 +124,14 @@
       orientationEl.disabled = pageSizeEl.value === 'image';
     });
 
+    // Sanitize filename input as user types (no slashes, no weird chars)
+    if (fileNameEl) {
+      fileNameEl.addEventListener('input', function () {
+        var cleaned = fileNameEl.value.replace(/[\\/:*?"<>|]+/g, '');
+        if (cleaned !== fileNameEl.value) fileNameEl.value = cleaned;
+      });
+    }
+
     // Convert
     convertBtn.addEventListener('click', convertToPdf);
 
@@ -126,7 +151,6 @@
         var cur = window.getLang();
         var next = cur === 'ar' ? 'en' : 'ar';
         localStorage.setItem('lang', next);
-        // Navigate to the appropriate static page
         if (next === 'en') {
           location.href = '/en/';
         } else {
@@ -144,7 +168,6 @@
       ghostClass: 'sortable-ghost',
       dragClass: 'sortable-drag',
       onEnd: function () {
-        // Sync the state array to the new DOM order
         var newOrder = [];
         gallery.querySelectorAll('li.thumb').forEach(function (li) {
           var id = li.getAttribute('data-id');
@@ -168,11 +191,10 @@
     }
     if (!validFiles.length) return;
 
-    // Load dimensions for each file
     var tasks = validFiles.map(function (f) { return loadImageMeta(f); });
     Promise.all(tasks).then(function (results) {
       results.forEach(function (meta) {
-        if (!meta) return; // failed to load -> skipped silently here
+        if (!meta) return;
         images.push(meta);
         renderThumb(meta);
       });
@@ -181,10 +203,8 @@
     });
   }
 
-  /** Load a File into an Image and get its natural dimensions. */
   function loadImageMeta(file) {
     return new Promise(function (resolve) {
-      // For WEBP we'll need to draw via canvas later, but Image can decode WEBP in modern browsers.
       var url = URL.createObjectURL(file);
       var img = new Image();
       img.onload = function () {
@@ -215,6 +235,17 @@
     var idx = document.createElement('span');
     idx.className = 'thumb-index';
     idx.textContent = '';
+
+    var zoomBtn = document.createElement('button');
+    zoomBtn.type = 'button';
+    zoomBtn.className = 'thumb-zoom';
+    zoomBtn.textContent = '🔍';
+    zoomBtn.title = window.t('lightbox.preview');
+    zoomBtn.setAttribute('aria-label', window.t('lightbox.preview'));
+    zoomBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      openLightbox(item.id);
+    });
 
     var imgWrap = document.createElement('div');
     imgWrap.className = 'thumb-img-wrap';
@@ -258,6 +289,7 @@
     actions.appendChild(delBtn);
 
     li.appendChild(idx);
+    li.appendChild(zoomBtn);
     li.appendChild(imgWrap);
     li.appendChild(meta);
     li.appendChild(actions);
@@ -303,7 +335,7 @@
     gallery.innerHTML = '';
     hideError();
     updateVisibility();
-    progressWrap.classList.add('hidden');
+    hideProgress();
   }
 
   // ---------- Visibility ----------
@@ -321,9 +353,9 @@
     progressText.textContent = text || '';
   }
   function hideProgress() {
-    // keep the bar visible briefly with 100%? We'll just hide after conversion.
     progressWrap.classList.add('hidden');
     progressFill.style.width = '0%';
+    progressText.textContent = '';
   }
   function showError(msg) {
     errorBox.textContent = msg;
@@ -343,16 +375,18 @@
     }
 
     hideError();
+    hideProgress();
     convertBtn.disabled = true;
 
     var quality = QUALITY_MAP[qualityEl.value] || 0.92;
-    var pageSizeMode = pageSizeEl.value; // 'a4' | 'letter' | 'image'
+    var pageSizeMode = pageSizeEl.value;
     var orientation = orientationEl.disabled ? 'portrait' : orientationEl.value;
     var margin = MARGINS[marginsEl.value] || 0;
     var skipped = [];
 
     try {
-      var { PDFDocument, degrees } = PDFLib;
+      var PDFDocument = PDFLib.PDFDocument;
+      var degrees = PDFLib.degrees;
       var pdfDoc = await PDFDocument.create();
 
       var total = images.length;
@@ -362,7 +396,6 @@
           Math.round((i / total) * 90),
           t('progress.processing', { i: i + 1, n: total })
         );
-        // Yield to the browser so the UI updates
         await new Promise(function (r) { setTimeout(r, 0); });
 
         try {
@@ -381,6 +414,7 @@
 
       if (pdfDoc.getPageCount() === 0) {
         showError(t('error.none'));
+        hideProgress();
         return;
       }
 
@@ -402,26 +436,28 @@
       if (skipped.length) {
         showError(t('error.skipped', { list: skipped.join(', ') }));
       }
+
+      // Hide progress bar shortly after completion
+      setTimeout(function () { hideProgress(); }, 1800);
+
     } catch (err) {
       console.error(err);
       showError('Conversion failed: ' + (err && err.message ? err.message : String(err)));
+      hideProgress();
     } finally {
       convertBtn.disabled = false;
     }
   }
 
-  /** Embed a single image into pdfDoc, converting WEBP -> JPEG if needed. */
   async function embedImageItem(pdfDoc, item, quality) {
     var file = item.file;
     var type = file.type || '';
 
-    // PDF-lib supports JPEG & PNG directly. WEBP must go through a canvas.
     if (type === 'image/png') {
       var pngBytes = await readAsArrayBuffer(file);
       return await pdfDoc.embedPng(pngBytes);
     }
     if (type === 'image/jpeg' || type === 'image/jpg') {
-      // If quality is "high" we can embed as-is. Otherwise recompress via canvas.
       if (quality >= 0.9) {
         var jpgBytes = await readAsArrayBuffer(file);
         return await pdfDoc.embedJpg(jpgBytes);
@@ -429,7 +465,6 @@
       var jpegData = await recompressToJpeg(item, quality);
       return await pdfDoc.embedJpg(jpegData);
     }
-    // Fallback: treat everything else (WEBP) through canvas -> JPEG
     var data = await recompressToJpeg(item, quality);
     return await pdfDoc.embedJpg(data);
   }
@@ -443,11 +478,6 @@
     });
   }
 
-  /**
-   * Draw the image (with its current rotation applied) onto a canvas and
-   * export as JPEG at the requested quality. Returns an ArrayBuffer suitable
-   * for pdfDoc.embedJpg().
-   */
   function recompressToJpeg(item, quality) {
     return new Promise(function (resolve, reject) {
       var img = new Image();
@@ -479,7 +509,6 @@
             ctx.translate(0, canvas.height);
             ctx.rotate(-Math.PI / 2);
           }
-          // White background (avoids black when converting transparent PNG/WEBP)
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           ctx.drawImage(img, 0, 0, w, h);
@@ -501,20 +530,13 @@
     });
   }
 
-  /**
-   * Add a page for the given embedded image, honouring page size / orientation /
-   * margins / rotation.
-   */
   function addImagePage(pdfDoc, embedded, item, opts) {
     var deg = item.rotation % 360;
-    var rotated = (deg === 90 || deg === 270);
     var imgW = embedded.width;
     var imgH = embedded.height;
 
-    // Determine page dimensions
     var pageW, pageH;
     if (opts.pageSizeMode === 'image') {
-      // Page = image size + margins (no orientation switch for "image" mode)
       pageW = imgW + opts.margin * 2;
       pageH = imgH + opts.margin * 2;
     } else {
@@ -530,8 +552,6 @@
 
     var page = pdfDoc.addPage([pageW, pageH]);
 
-    // For "image" mode, page is exactly image+margin, so just fit.
-    // For fixed page modes, fit inside (page - margins).
     var availW = Math.max(1, pageW - opts.margin * 2);
     var availH = Math.max(1, pageH - opts.margin * 2);
 
@@ -539,8 +559,6 @@
     var drawW = imgW * scale;
     var drawH = imgH * scale;
 
-    // After rotation, the visual box is drawH × drawW (if 90/270).
-    // We centre the *drawn* box within the page.
     var x = (pageW - drawW) / 2;
     var y = (pageH - drawH) / 2;
 
@@ -554,15 +572,156 @@
   }
 
   // ---------- Filename ----------
+   // ---------- Filename ----------
+   // ---------- Filename ----------
   function buildFilename() {
+    // Sanitize whatever the user typed (if anything).
+    var base = '';
+    if (fileNameEl) base = (fileNameEl.value || '').trim();
+    base = base.replace(/[\\/:*?"<>|]+/g, '').replace(/\s+/g, ' ').trim();
+
+    // Case 1: user provided a name → use it as-is, no date appended.
+    if (base) {
+      return base + '.pdf';
+    }
+
+    // Case 2: no name → default base + timestamp for uniqueness.
     var d = new Date();
-    var pad = function (n) { return n < 10 ? '0' + n : String(n); };
+    var pad = function (n) {
+      n = Number(n) || 0;
+      return n < 10 ? '0' + n : String(n);
+    };
     var stamp =
       d.getFullYear() + '-' +
       pad(d.getMonth() + 1) + '-' +
       pad(d.getDate()) + '-' +
-      pad(d.getHours()) + pad(d.getMinutes());
-    return 'images-' + stamp + '.pdf';
+      pad(d.getHours()) + '-' +
+      pad(d.getMinutes());
+
+    return DEFAULT_BASENAME + '-' + stamp + '.pdf';
+  }
+
+  // ---------- Lightbox / Preview ----------
+  function openLightbox(id) {
+    var idx = images.findIndex(function (x) { return x.id === id; });
+    if (idx === -1) return;
+    currentPreviewId = id;
+    renderLightbox();
+    lightbox.classList.add('open');
+    lightbox.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('lightbox-open');
+    setTimeout(function () { lbClose.focus(); }, 50);
+  }
+
+  function closeLightbox() {
+    lightbox.classList.remove('open');
+    lightbox.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('lightbox-open');
+    currentPreviewId = null;
+  }
+
+  function renderLightbox() {
+    var idx = images.findIndex(function (x) { return x.id === currentPreviewId; });
+    if (idx === -1) { closeLightbox(); return; }
+    var item = images[idx];
+
+    lbImage.src = item.url;
+    lbImage.alt = item.name;
+    lbImage.style.transform = 'rotate(' + item.rotation + 'deg)';
+    lbFilename.textContent = item.name;
+    lbFilename.title = item.name;
+    lbCounter.textContent = (idx + 1) + ' / ' + images.length;
+
+    lbPrev.disabled = images.length < 2;
+    lbNext.disabled = images.length < 2;
+  }
+
+  function lightboxNavigate(delta) {
+    if (!currentPreviewId || images.length < 2) return;
+    var idx = images.findIndex(function (x) { return x.id === currentPreviewId; });
+    if (idx === -1) return;
+    var next = (idx + delta + images.length) % images.length;
+    currentPreviewId = images[next].id;
+    renderLightbox();
+  }
+
+  function lightboxRotate() {
+    if (!currentPreviewId) return;
+    var item = images.find(function (x) { return x.id === currentPreviewId; });
+    if (!item) return;
+    item.rotation = (item.rotation + 90) % 360;
+    lbImage.style.transform = 'rotate(' + item.rotation + 'deg)';
+    var li = gallery.querySelector('li[data-id="' + item.id + '"]');
+    if (li) {
+      var thumbImg = li.querySelector('.thumb-img-wrap img');
+      if (thumbImg) thumbImg.style.transform = 'rotate(' + item.rotation + 'deg)';
+    }
+  }
+
+  function lightboxDelete() {
+    if (!currentPreviewId) return;
+    var id = currentPreviewId;
+    var idx = images.findIndex(function (x) { return x.id === id; });
+    if (idx === -1) return;
+
+    if (images.length === 1) {
+      deleteItem(id);
+      closeLightbox();
+      return;
+    }
+
+    var nextIdx = idx < images.length - 1 ? idx + 1 : idx - 1;
+    var nextId = images[nextIdx].id;
+
+    deleteItem(id);
+    currentPreviewId = nextId;
+    renderLightbox();
+  }
+
+  // ---------- Lightbox events ----------
+  function bindLightboxEvents() {
+    if (!lightbox || !lbClose || !lbOk || !lbRotate || !lbDelete || !lbPrev || !lbNext || !lbImageWrap) {
+      console.error('[Lightbox] Missing DOM elements — check the HTML markup.');
+      return;
+    }
+
+    lbClose.addEventListener('click', closeLightbox);
+    lbOk.addEventListener('click', closeLightbox);
+    lbRotate.addEventListener('click', lightboxRotate);
+    lbDelete.addEventListener('click', lightboxDelete);
+    lbPrev.addEventListener('click', function () { lightboxNavigate(-1); });
+    lbNext.addEventListener('click', function () { lightboxNavigate(1); });
+
+    lightbox.addEventListener('click', function (e) {
+      if (e.target === lightbox || e.target === lbImageWrap) closeLightbox();
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (!lightbox.classList.contains('open')) return;
+      if (e.key === 'Escape') { e.preventDefault(); closeLightbox(); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); lightboxNavigate(-1); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); lightboxNavigate(1); }
+    });
+
+    var touchStartX = 0, touchStartY = 0, touchActive = false;
+    lbImageWrap.addEventListener('touchstart', function (e) {
+      if (e.touches.length !== 1) return;
+      touchActive = true;
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+
+    lbImageWrap.addEventListener('touchend', function (e) {
+      if (!touchActive) return;
+      touchActive = false;
+      var t = e.changedTouches[0];
+      var dx = t.clientX - touchStartX;
+      var dy = t.clientY - touchStartY;
+      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
+        if (dx < 0) lightboxNavigate(1);
+        else lightboxNavigate(-1);
+      }
+    }, { passive: true });
   }
 
   // ---------- Boot ----------

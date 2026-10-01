@@ -61,9 +61,21 @@
       <ul id="gallery" class="gallery" aria-label="Image list"></ul>
     </section>
 
+    <!-- Settings -->
     <section id="settingsSection" class="settings-section hidden">
       <h2 data-i18n="settings.title">Conversion settings</h2>
       <div class="settings-grid">
+
+        <label class="field">
+          <span data-i18n="settings.fileName">PDF file name</span>
+          <input id="fileName" type="text" maxlength="60"
+                 placeholder="ImagesToPdf"
+                 data-i18n-placeholder="settings.fileNamePlaceholder" />
+          <span class="field-hint" data-i18n="settings.fileNameHint">
+            Leave empty to use the default name. Date and time will be added automatically.
+          </span>
+        </label>
+
         <label class="field">
           <span data-i18n="settings.pageSize">Page size</span>
           <select id="pageSize">
@@ -97,7 +109,6 @@
         </label>
       </div>
     </section>
-
     <section id="convertSection" class="convert-section hidden">
       <button id="convertBtn" class="convert-btn" type="button">
         <span class="convert-icon">⬇️</span>

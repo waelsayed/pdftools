@@ -74,9 +74,20 @@
     </section>
 
     <!-- Settings -->
+       <!-- Settings -->
     <section id="settingsSection" class="settings-section hidden">
       <h2 data-i18n="settings.title">إعدادات التحويل</h2>
       <div class="settings-grid">
+
+        <label class="field">
+          <span data-i18n="settings.fileName">اسم ملف PDF</span>
+          <input id="fileName" type="text" maxlength="60"
+                 placeholder="ImagesToPdf"
+                 data-i18n-placeholder="settings.fileNamePlaceholder" />
+          <span class="field-hint" data-i18n="settings.fileNameHint">
+            اتركه فارغاً لاستخدام الاسم الافتراضي. سيُضاف التاريخ والوقت تلقائياً.
+          </span>
+        </label>
 
         <label class="field">
           <span data-i18n="settings.pageSize">حجم الصفحة</span>
@@ -187,7 +198,28 @@
       </p>
     </div>
   </footer>
+<!-- Image Preview Lightbox -->
+<div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="lightbox-stage">
+    <div class="lightbox-topbar">
+      <span class="lightbox-filename" id="lbFilename"></span>
+      <span class="lightbox-counter" id="lbCounter"></span>
+      <button class="lightbox-close" id="lbClose" type="button" aria-label="Close preview">✕</button>
+    </div>
 
+    <div class="lightbox-image-wrap" id="lbImageWrap">
+      <button class="lightbox-nav prev" id="lbPrev" type="button" aria-label="Previous image">‹</button>
+      <img id="lbImage" alt="" />
+      <button class="lightbox-nav next" id="lbNext" type="button" aria-label="Next image">›</button>
+    </div>
+
+    <div class="lightbox-actions">
+      <button type="button" id="lbRotate">↻ <span data-i18n="lightbox.rotate">تدوير</span></button>
+      <button type="button" id="lbDelete" class="danger">🗑️ <span data-i18n="lightbox.delete">حذف</span></button>
+      <button type="button" id="lbOk" class="ok-btn">✓ <span data-i18n="lightbox.ok">موافق</span></button>
+    </div>
+  </div>
+</div>
   <!-- CDN libraries (pinned versions) -->
   <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
