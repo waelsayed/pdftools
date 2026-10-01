@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>سياسة الخصوصية — صور إلى PDF</title>
+  <meta name="description" content="سياسة الخصوصية لأداة تحويل الصور إلى PDF. ملفاتك لا تغادر جهازك، والتحويل يتم بالكامل في متصفحك." />
+  <link rel="canonical" href="https://example.com/privacy.html" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="/" class="logo">📄 <span data-i18n="app.name">صور إلى PDF</span></a>
+      <nav class="header-actions">
+        <button id="langToggle" class="icon-btn" type="button">EN</button>
+        <button id="themeToggle" class="icon-btn" type="button">🌙</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container content-section">
+    <h1>سياسة الخصوصية</h1>
+    <p><em>آخر تحديث: <span id="year"></span></em></p>
+
+    <h2>ملخص سريع</h2>
+    <p>
+      أداتنا لتحويل الصور إلى PDF تعمل بالكامل داخل متصفحك. <strong>لا نرفع صورك أو ملفاتك
+      إلى أي خادم</strong>، ولا نخزّنها، ولا نراها من الأساس. كل عمليات المعالجة تتم على جهازك
+      باستخدام JavaScript في المتصفح.
+    </p>
+
+    <h2>ما نجمعه</h2>
+    <ul>
+      <li><strong>ملفاتك:</strong> لا نجمعها ولا نرفعها. تبقى على جهازك.</li>
+      <li><strong>بيانات الاستخدام:</strong> قد نستخدم أدوات تحليل عامة (مثل Google Analytics) لمعرفة عدد الزيارات وصفحات الاستخدام. هذه البيانات مجمّعة ومجهولة الهوية.</li>
+      <li><strong>التخزين المحلي:</strong> نحفظ تفضيلاتك (اللغة، الوضع الداكن) في <code>localStorage</code> على جهازك فقط.</li>
+    </ul>
+
+    <h2>ملفات تعريف الارتباط (Cookies)</h2>
+    <p>
+      قد يستخدم موقعنا ملفات تعريف الارتباط لأغراض التحليل والإعلانات. عند زيارة الموقع،
+      قد تضع أطراف ثالثة (مثل Google AdSense) ملفات تعريف ارتباط لعرض إعلانات ملائمة.
+      يمكنك تعطيلها من إعدادات متصفحك.
+    </p>
+
+    <h2>الإعلانات</h2>
+    <p>
+      نعتمد على إعلانات Google AdSense لتغطية تكاليف الاستضافة. قد يستخدم Google ملفات تعريف
+      الارتباط لعرض إعلانات مبنية على زياراتك السابقة. لمزيد من المعلومات، راجع
+      <a href="https://policies.google.com/technologies/ads" rel="noopener" target="_blank">سياسة إعلانات Google</a>.
+    </p>
+
+    <h2>حقوقك</h2>
+    <p>
+      لأننا لا نجمع بيانات شخصية عنك، فلا يوجد ما نحذفه بناءً على طلبك. لكن يمكنك دائماً
+      مسح بيانات المتصفح المحلية لإزالة تفضيلاتك.
+    </p>
+
+    <h2>التواصل</h2>
+    <p>لأي استفسار بخصوص الخصوصية، راسلنا على: <a href="mailto:contact@example.com">contact@example.com</a></p>
+
+    <p><a href="/" data-i18n="nav.back">← العودة إلى الأداة</a></p>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>© <span id="year2"></span> <span data-i18n="app.name">صور إلى PDF</span></p>
+    </div>
+  </footer>
+
+  <script src="/js/i18n.js"></script>
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+    document.getElementById('year2').textContent = new Date().getFullYear();
+    // theme + lang persistence (lightweight, shared with app.js logic)
+    (function(){
+      var t = localStorage.getItem('theme');
+      if (t === 'dark') document.documentElement.classList.add('dark');
+      var l = localStorage.getItem('lang') || 'ar';
+      if (l === 'en') {
+        document.documentElement.lang = 'en';
+        document.documentElement.dir = 'ltr';
+      }
+      var tBtn = document.getElementById('themeToggle');
+      if (tBtn) tBtn.addEventListener('click', function(){
+        document.documentElement.classList.toggle('dark');
+        localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+      });
+      var lBtn = document.getElementById('langToggle');
+      if (lBtn) lBtn.addEventListener('click', function(){ location.href = '/en/'; });
+    })();
+  </script>
+</body>
+</html>

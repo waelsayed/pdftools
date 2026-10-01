@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Image to PDF Converter — Free & 100% Private | No Upload</title>
+  <meta name="description" content="Convert JPG, PNG and WEBP images into a single PDF file for free. Everything runs in your browser — your files never leave your device." />
+  <meta name="keywords" content="image to pdf, jpg to pdf, png to pdf, webp to pdf, merge images to pdf" />
+  <link rel="canonical" href="https://example.com/en/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Image to PDF — Free & Private" />
+  <meta property="og:description" content="Convert JPG/PNG/WEBP to PDF. All processing happens in your browser — no uploads." />
+  <meta property="og:url" content="https://example.com/en/" />
+  <link rel="alternate" hreflang="ar" href="https://example.com/" />
+  <link rel="alternate" hreflang="en" href="https://example.com/en/" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="/en/" class="logo">📄 <span data-i18n="app.name">Image to PDF</span></a>
+      <nav class="header-actions">
+        <button id="langToggle" class="icon-btn" type="button">AR</button>
+        <button id="themeToggle" class="icon-btn" type="button">🌙</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ADSENSE: header banner -->
+  <div class="ad-slot container" data-ad="header" aria-hidden="true"></div>
+
+  <main class="container">
+
+    <section class="hero">
+      <h1 data-i18n="hero.title">Convert your images into a single PDF</h1>
+      <p class="hero-sub" data-i18n="hero.subtitle">
+        Merge JPG, PNG and WEBP images into one tidy PDF. Everything happens in your browser.
+      </p>
+      <div class="privacy-badge" role="note">
+        🔒 <span data-i18n="privacy.badge">Your files never leave your device — conversion happens entirely in your browser</span>
+      </div>
+    </section>
+
+    <section class="dropzone-section">
+      <div id="dropzone" class="dropzone" tabindex="0" role="button"
+           aria-label="Drag and drop area for selecting images">
+        <div class="dz-icon">📁</div>
+        <p class="dz-title" data-i18n="dz.title">Drag images here or click to choose</p>
+        <p class="dz-hint" data-i18n="dz.hint">JPG · PNG · WEBP — multiple files supported</p>
+        <input id="fileInput" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden />
+      </div>
+    </section>
+
+    <section id="gallerySection" class="gallery-section hidden">
+      <div class="gallery-header">
+        <h2 data-i18n="gallery.title">Added images</h2>
+        <button id="clearAll" class="text-btn" type="button" data-i18n="gallery.clear">Clear all</button>
+      </div>
+      <p class="gallery-hint" data-i18n="gallery.hint">Drag to reorder. Tap any image to rotate or delete.</p>
+      <ul id="gallery" class="gallery" aria-label="Image list"></ul>
+    </section>
+
+    <section id="settingsSection" class="settings-section hidden">
+      <h2 data-i18n="settings.title">Conversion settings</h2>
+      <div class="settings-grid">
+        <label class="field">
+          <span data-i18n="settings.pageSize">Page size</span>
+          <select id="pageSize">
+            <option value="a4" data-i18n="settings.pageSize.a4">A4</option>
+            <option value="letter" data-i18n="settings.pageSize.letter">Letter</option>
+            <option value="image" data-i18n="settings.pageSize.image">Same as image</option>
+          </select>
+        </label>
+        <label class="field">
+          <span data-i18n="settings.orientation">Orientation</span>
+          <select id="orientation">
+            <option value="portrait" data-i18n="settings.orientation.portrait">Portrait</option>
+            <option value="landscape" data-i18n="settings.orientation.landscape">Landscape</option>
+          </select>
+        </label>
+        <label class="field">
+          <span data-i18n="settings.margins">Margins</span>
+          <select id="margins">
+            <option value="none" data-i18n="settings.margins.none">None</option>
+            <option value="small" data-i18n="settings.margins.small">Small</option>
+            <option value="large" data-i18n="settings.margins.large">Large</option>
+          </select>
+        </label>
+        <label class="field">
+          <span data-i18n="settings.quality">Image quality</span>
+          <select id="quality">
+            <option value="high" data-i18n="settings.quality.high">High</option>
+            <option value="medium" data-i18n="settings.quality.medium">Medium</option>
+            <option value="low" data-i18n="settings.quality.low">Low</option>
+          </select>
+        </label>
+      </div>
+    </section>
+
+    <section id="convertSection" class="convert-section hidden">
+      <button id="convertBtn" class="convert-btn" type="button">
+        <span class="convert-icon">⬇️</span>
+        <span data-i18n="convert.button">Convert & Download PDF</span>
+      </button>
+      <div id="progressWrap" class="progress-wrap hidden" aria-live="polite">
+        <div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div>
+        <p id="progressText" class="progress-text"></p>
+      </div>
+      <div id="errorBox" class="error-box hidden" role="alert"></div>
+    </section>
+
+    <!-- ADSENSE: in-content -->
+    <div class="ad-slot container" data-ad="in-content" aria-hidden="true"></div>
+
+    <section class="content-section">
+      <h2 data-i18n="content.h2">Why convert images to PDF?</h2>
+      <p data-i18n="content.p1">
+        Students photograph lecture slides, handwritten assignments and textbook pages every day.
+        Those images end up scattered across a phone gallery. Merging them into a single PDF makes
+        them easy to share, print, and keep in order.
+      </p>
+      <h3 data-i18n="content.h3a">Common use cases</h3>
+      <ul>
+        <li data-i18n="content.li1">Combine lecture photos into a single study PDF.</li>
+        <li data-i18n="content.li2">Submit handwritten homework as a PDF.</li>
+        <li data-i18n="content.li3">Group scanned book pages for revision.</li>
+        <li data-i18n="content.li4">Bundle photographed receipts or documents.</li>
+      </ul>
+      <h3 data-i18n="content.h3b">Why privacy matters</h3>
+      <p data-i18n="content.p2">
+        Most online converters upload your images to a server first, then return the PDF. That means
+        your personal or academic documents sit on machines you know nothing about. Our tool works
+        differently: conversion runs entirely in your browser, and your files are never transmitted.
+        You can even disconnect from the internet after the page loads and it still works.
+      </p>
+      <h3 data-i18n="content.h3c">How to use it</h3>
+      <ol>
+        <li data-i18n="content.ol1">Drag images into the drop zone, or click to choose them.</li>
+        <li data-i18n="content.ol2">Reorder by dragging; rotate or delete as needed.</li>
+        <li data-i18n="content.ol3">Pick page size, margins, and quality.</li>
+        <li data-i18n="content.ol4">Click convert — the PDF downloads instantly.</li>
+      </ol>
+    </section>
+
+  </main>
+
+  <!-- ADSENSE: footer -->
+  <div class="ad-slot container" data-ad="footer" aria-hidden="true"></div>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>© <span id="year"></span> <span data-i18n="app.name">Image to PDF</span></p>
+      <nav class="footer-links">
+        <a href="/privacy.html" data-i18n="footer.privacy">Privacy Policy</a>
+        <a href="/" data-i18n="footer.arabic">العربية</a>
+        <a href="mailto:contact@example.com" data-i18n="footer.contact">Contact</a>
+      </nav>
+      <p class="footer-about" data-i18n="footer.about">
+        A free image-to-PDF tool that runs entirely in your browser. An independent project.
+      </p>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+  <script src="/js/i18n.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>

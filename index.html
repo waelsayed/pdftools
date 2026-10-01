@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>تحويل الصور إلى PDF مجاناً — بدون رفع للملفات | صور إلى PDF</title>
+  <meta name="description" content="حوّل صور JPG و PNG و WEBP إلى ملف PDF واحد مجاناً. التحويل يتم بالكامل في متصفحك — ملفاتك لا تغادر جهازك أبداً. مناسب لطلاب الجامعة والمدارس." />
+  <meta name="keywords" content="تحويل صور الى pdf, jpg to pdf, png to pdf, دمج الصور في pdf, تحويل الصور pdf عربي" />
+  <link rel="canonical" href="https://example.com/" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="تحويل الصور إلى PDF — مجاناً وبخصوصية تامة" />
+  <meta property="og:description" content="حوّل صور JPG/PNG/WEBP إلى PDF. كل شيء يتم في متصفحك — لا رفع ولا خوادم." />
+  <meta property="og:url" content="https://example.com/" />
+  <meta property="og:locale" content="ar_EG" />
+  <meta property="og:image" content="https://example.com/og-image.png" />
+
+  <link rel="alternate" hreflang="ar" href="https://example.com/" />
+  <link rel="alternate" hreflang="en" href="https://example.com/en/" />
+
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📄</text></svg>" />
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="/" class="logo" aria-label="الصفحة الرئيسية">📄 <span data-i18n="app.name">صور إلى PDF</span></a>
+      <nav class="header-actions">
+        <button id="langToggle" class="icon-btn" type="button" aria-label="Switch language">EN</button>
+        <button id="themeToggle" class="icon-btn" type="button" aria-label="Toggle dark mode">🌙</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ADSENSE: header banner -->
+  <div class="ad-slot container" data-ad="header" aria-hidden="true"></div>
+
+  <main class="container">
+
+    <section class="hero">
+      <h1 data-i18n="hero.title">حوّل صورك إلى ملف PDF واحد</h1>
+      <p class="hero-sub" data-i18n="hero.subtitle">
+        ادمج صور JPG و PNG و WEBP في ملف PDF مرتب. كل شيء يتم داخل متصفحك.
+      </p>
+      <div class="privacy-badge" role="note">
+        🔒 <span data-i18n="privacy.badge">ملفاتك لا تغادر جهازك — التحويل يتم بالكامل في متصفحك</span>
+      </div>
+    </section>
+
+    <!-- Dropzone -->
+    <section class="dropzone-section">
+      <div id="dropzone" class="dropzone" tabindex="0" role="button"
+           aria-label="منطقة السحب والإفلات لاختيار الصور">
+        <div class="dz-icon">📁</div>
+        <p class="dz-title" data-i18n="dz.title">اسحب الصور هنا أو اضغط للاختيار</p>
+        <p class="dz-hint" data-i18n="dz.hint">JPG · PNG · WEBP — يمكنك اختيار عدة صور</p>
+        <input id="fileInput" type="file" accept="image/jpeg,image/png,image/webp"
+               multiple hidden />
+      </div>
+    </section>
+
+    <!-- Thumbnails -->
+    <section id="gallerySection" class="gallery-section hidden">
+      <div class="gallery-header">
+        <h2 data-i18n="gallery.title">الصور المضافة</h2>
+        <button id="clearAll" class="text-btn" type="button" data-i18n="gallery.clear">مسح الكل</button>
+      </div>
+      <p class="gallery-hint" data-i18n="gallery.hint">
+        اسحب الصور لإعادة ترتيبها. اضغط على أي صورة للتدوير أو الحذف.
+      </p>
+      <ul id="gallery" class="gallery" aria-label="قائمة الصور"></ul>
+    </section>
+
+    <!-- Settings -->
+    <section id="settingsSection" class="settings-section hidden">
+      <h2 data-i18n="settings.title">إعدادات التحويل</h2>
+      <div class="settings-grid">
+
+        <label class="field">
+          <span data-i18n="settings.pageSize">حجم الصفحة</span>
+          <select id="pageSize">
+            <option value="a4" data-i18n="settings.pageSize.a4">A4</option>
+            <option value="letter" data-i18n="settings.pageSize.letter">Letter</option>
+            <option value="image" data-i18n="settings.pageSize.image">بحجم الصورة</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span data-i18n="settings.orientation">اتجاه الصفحة</span>
+          <select id="orientation">
+            <option value="portrait" data-i18n="settings.orientation.portrait">طولي</option>
+            <option value="landscape" data-i18n="settings.orientation.landscape">عرضي</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span data-i18n="settings.margins">الهوامش</span>
+          <select id="margins">
+            <option value="none" data-i18n="settings.margins.none">بدون</option>
+            <option value="small" data-i18n="settings.margins.small">صغيرة</option>
+            <option value="large" data-i18n="settings.margins.large">كبيرة</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span data-i18n="settings.quality">جودة الصورة</span>
+          <select id="quality">
+            <option value="high" data-i18n="settings.quality.high">عالية</option>
+            <option value="medium" data-i18n="settings.quality.medium">متوسطة</option>
+            <option value="low" data-i18n="settings.quality.low">منخفضة</option>
+          </select>
+        </label>
+
+      </div>
+    </section>
+
+    <!-- Convert -->
+    <section id="convertSection" class="convert-section hidden">
+      <button id="convertBtn" class="convert-btn" type="button">
+        <span class="convert-icon">⬇️</span>
+        <span data-i18n="convert.button">تحويل وتحميل PDF</span>
+      </button>
+      <div id="progressWrap" class="progress-wrap hidden" aria-live="polite">
+        <div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div>
+        <p id="progressText" class="progress-text"></p>
+      </div>
+      <div id="errorBox" class="error-box hidden" role="alert"></div>
+    </section>
+
+    <!-- ADSENSE: in-content -->
+    <div class="ad-slot container" data-ad="in-content" aria-hidden="true"></div>
+
+    <!-- SEO content -->
+    <section class="content-section">
+      <h2 data-i18n="content.h2">لماذا تحوّل صورك إلى PDF؟</h2>
+      <p data-i18n="content.p1">
+        إذا كنت طالباً في الجامعة أو المدرسة، فأنت تعرف المشكلة جيداً: تصوّر محاضرات الأستاذ بهاتفك،
+        أو تصوّر أوراق الواجب بعد أن تكتبها بخط يدك، ثم تجد نفسك مع عشرات الصور المتفرقة في معرض
+        الهاتف. مشاركتها أو طباعتها مهمة صعبة. تحويل هذه الصور إلى ملف PDF واحد يحل المشكلة:
+        ملف واحد مرتب، سهل الإرسال، ويمكن فتحه على أي جهاز دون فقدان الترتيب.
+      </p>
+      <h3 data-i18n="content.h3a">حالات الاستخدام الشائعة</h3>
+      <ul>
+        <li data-i18n="content.li1">تصوير محاضرات أو ملاحظات الفصل وتحويلها إلى مذكرة PDF واحدة.</li>
+        <li data-i18n="content.li2">تصوير واجب مكتوب بخط اليد وتسليمه في ملف PDF كما يطلب الأساتذة أحياناً.</li>
+        <li data-i18n="content.li3">جمع صفحات كتاب أو بحث مصوّرة في مستند واحد للمراجعة قبل الامتحان.</li>
+        <li data-i18n="content.li4">تحويل إيصالات أو مستندات رسمية مصوّرة إلى ملف واحد منظّم.</li>
+      </ul>
+      <h3 data-i18n="content.h3b">لماذا الخصوصية مهمة؟</h3>
+      <p data-i18n="content.p2">
+        معظم المواقع التي تحوّل الصور إلى PDF ترفع صورك إلى خادمها أولاً، ثم ترسل لك الملف الناتج.
+        هذا يعني أن صورك — وربما مستنداتك الشخصية أو الأكاديمية — تُخزّن على جهاز لا تعرف عنه شيئاً.
+        أداتنا تعمل بشكل مختلف تماماً: التحويل يتم بالكامل داخل متصفحك باستخدام تقنيات الويب الحديثة،
+        وملفاتك لا تُرسل إلى أي خادم على الإطلاق. يمكنك حتى فصل الإنترنت بعد فتح الصفحة وسيظل
+        التحويل يعمل. هذه ليست مجرد ميزة تسويقية، بل مبدأ أساسي في تصميم الأداة.
+      </p>
+      <h3 data-i18n="content.h3c">كيف تستخدم الأداة؟</h3>
+      <ol>
+        <li data-i18n="content.ol1">اسحب صورك إلى المنطقة المخصصة أو اضغط لاختيارها من جهازك.</li>
+        <li data-i18n="content.ol2">أعد ترتيب الصور بالسحب، وابدأ التدوير أو الحذف عند الحاجة.</li>
+        <li data-i18n="content.ol3">اختر حجم الصفحة والهوامش والجودة حسب ما تحتاجه.</li>
+        <li data-i18n="content.ol4">اضغط زر التحويل، وسيبدأ ملف PDF في التحميل مباشرة.</li>
+      </ol>
+      <p data-i18n="content.p3">
+        الأداة مجانية تماماً، ولا تحتاج إلى تسجيل أو رفع أي بيانات. تعمل على هاتفك وحاسوبك بنفس
+        الطريقة، وتدعم العربية والإنجليزية.
+      </p>
+    </section>
+
+  </main>
+
+  <!-- ADSENSE: footer -->
+  <div class="ad-slot container" data-ad="footer" aria-hidden="true"></div>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>© <span id="year"></span> <span data-i18n="app.name">صور إلى PDF</span></p>
+      <nav class="footer-links">
+        <a href="/privacy.html" data-i18n="footer.privacy">سياسة الخصوصية</a>
+        <a href="/en/" data-i18n="footer.english">English</a>
+        <a href="mailto:contact@example.com" data-i18n="footer.contact">اتصل بنا</a>
+      </nav>
+      <p class="footer-about" data-i18n="footer.about">
+        أداة مجانية لتحويل الصور إلى PDF تعمل بالكامل في متصفحك. مشروع مستقل يهدف لمساعدة الطلاب.
+      </p>
+    </div>
+  </footer>
+
+  <!-- CDN libraries (pinned versions) -->
+  <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+  <script src="/js/i18n.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>
