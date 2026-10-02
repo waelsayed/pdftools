@@ -16,16 +16,16 @@
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://pdf.tasawehala.com/privacy.html</loc>
-    <xhtml:link rel="alternate" hreflang="ar" href="https://pdf.tasawehala.com/privacy.html" />
-    <xhtml:link rel="alternate" hreflang="en" href="https://pdf.tasawehala.com/en/privacy.html" />
+    <loc>https://pdf.tasawehala.com/privacy</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://pdf.tasawehala.com/privacy" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdf.tasawehala.com/en/privacy" />
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://pdf.tasawehala.com/en/privacy.html</loc>
-    <xhtml:link rel="alternate" hreflang="ar" href="https://pdf.tasawehala.com/privacy.html" />
-    <xhtml:link rel="alternate" hreflang="en" href="https://pdf.tasawehala.com/en/privacy.html" />
+    <loc>https://pdf.tasawehala.com/en/privacy</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://pdf.tasawehala.com/privacy" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdf.tasawehala.com/en/privacy" />
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>

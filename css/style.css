@@ -79,18 +79,7 @@ a:hover { text-decoration: underline; }
 .icon-btn:hover { background: var(--border); }
 
 /* ---------- Ad slots ---------- */
-.ad-slot {
-  margin: 24px auto;
-  text-align: center;
-  /* Reserved space so the page never jumps when the ad loads (protects CLS).
-     Mobile usually serves up to 300x250/336x280, desktop up to 970x250. */
-  min-height: 280px;
-  display: flex; align-items: center; justify-content: center;
-}
-.ad-slot .adsbygoogle { width: 100%; }
-@media (min-width: 768px) {
-  .ad-slot[data-ad="main"] { min-height: 250px; }
-}
+/* AdSense Auto ads inject their own placements (anchor/vignette); no reserved slot needed. */
 
 /* ---------- Hero ---------- */
 .hero { text-align: center; padding: 32px 0 20px; }
@@ -301,7 +290,7 @@ a:hover { text-decoration: underline; }
 
 /* ---------- Print ---------- */
 @media print {
-  .site-header, .site-footer, .ad-slot, .dropzone-section,
+  .site-header, .site-footer, .dropzone-section,
   .convert-section, .settings-section { display: none; }
 }
 

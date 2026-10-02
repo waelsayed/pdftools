@@ -8,20 +8,85 @@
   <meta name="description" content="سياسة الخصوصية لأداة تحويل الصور إلى PDF من صمّم بنفسك. التحويل يتم بالكامل في متصفحك — صورك وملفاتك لا تُرفع إلى أي خادم أبداً." />
   <meta name="keywords" content="سياسة الخصوصية, تحويل الصور الى pdf, خصوصية" />
   <meta name="robots" content="index, follow" />
-  <link rel="canonical" href="https://pdf.tasawehala.com/privacy.html" />
+  <link rel="canonical" href="https://pdf.tasawehala.com/privacy" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="صمّم بنفسك" />
   <meta property="og:title" content="سياسة الخصوصية — تحويل الصور إلى PDF" />
   <meta property="og:description" content="سياسة الخصوصية لأداة تحويل الصور إلى PDF. ملفاتك لا تغادر جهازك أبداً." />
-  <meta property="og:url" content="https://pdf.tasawehala.com/privacy.html" />
+  <meta property="og:url" content="https://pdf.tasawehala.com/privacy" />
   <meta property="og:image" content="https://pdf.tasawehala.com/og-image.png" />
-  <link rel="alternate" hreflang="ar" href="https://pdf.tasawehala.com/privacy.html" />
-  <link rel="alternate" hreflang="en" href="https://pdf.tasawehala.com/en/privacy.html" />
+  <link rel="alternate" hreflang="ar" href="https://pdf.tasawehala.com/privacy" />
+  <link rel="alternate" hreflang="en" href="https://pdf.tasawehala.com/en/privacy" />
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="icon" type="image/webp" href="/images/logo.webp" />
   <link rel="apple-touch-icon" href="/images/logo.webp" />
 </head>
 <body>
+
+  <!-- Facebook in-app gate: blocks until the user chooses -->
+  <style>
+    .fb-gate { display: none; position: fixed; inset: 0; z-index: 1000;
+      background: rgba(10, 14, 30, 0.62); align-items: center; justify-content: center; padding: 20px; }
+    .fb-gate.show { display: flex; }
+    .fb-gate-card { background: var(--surface, #fff); color: var(--text, #111);
+      border-radius: 18px; max-width: 430px; width: 100%; padding: 28px 24px;
+      text-align: center; box-shadow: 0 24px 70px rgba(0,0,0,.35);
+      border: 1px solid var(--border, #e5e7eb); }
+    .fb-gate-icon { font-size: 2.4rem; line-height: 1; }
+    .fb-gate-card h2 { font-size: 1.15rem; margin: 10px 0 8px; }
+    .fb-gate-card p { font-size: 0.92rem; color: var(--text-muted, #555);
+      line-height: 1.8; margin: 0 0 6px; }
+    .fb-gate-steps { font-size: 0.85rem; background: var(--surface-2, #f0f2f7);
+      border-radius: 10px; padding: 10px 12px; margin: 12px 0; line-height: 1.8; }
+    .fb-gate-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+    .fb-gate-open { background: #1877f2; color: #fff; border: none; border-radius: 10px;
+      padding: 13px; font-size: 1rem; font-weight: 700; cursor: pointer; font-family: inherit; }
+    .fb-gate-open:active { transform: scale(.98); }
+    .fb-gate-dismiss { background: none; border: none; cursor: pointer;
+      color: var(--text-muted, #777); font-size: 0.9rem; padding: 6px;
+      font-family: inherit; text-decoration: underline; }
+  </style>
+  <div class="fb-gate" id="fbGate" role="dialog" aria-modal="true" aria-labelledby="fbGateTitle">
+    <div class="fb-gate-card">
+      <div class="fb-gate-icon">📱</div>
+      <h2 id="fbGateTitle">تنبيه: أنت داخل تطبيق فيسبوك</h2>
+      <p>متصفح فيسبوك الداخلي غير مكتمل، وقد تفشل بعض المزايا (رفع الصور أو تحميل ملف الـ PDF).</p>
+      <p><strong>لتصفح الموقع بدون أخطاء، افتحه في متصفح جهازك.</strong></p>
+      <div class="fb-gate-steps">أو يدوياً: اضغط زر ⋯ أعلى الشاشة ← اختر «فتح في المتصفح».</div>
+      <div class="fb-gate-actions">
+        <button type="button" class="fb-gate-open" id="fbGateOpen">فتح في متصفح الجهاز ↗</button>
+        <button type="button" class="fb-gate-dismiss" id="fbGateDismiss">غير موافق — متابعة هنا</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      try {
+        var ua = navigator.userAgent || navigator.vendor || '';
+        if (!/FBAN|FBAV|FB_IAB/i.test(ua)) return;   /* Facebook in-app only */
+        if (sessionStorage.getItem('fbGateChoice') === '1') return;
+        var gate = document.getElementById('fbGate');
+        if (!gate) return;
+        gate.classList.add('show');
+        document.body.style.overflow = 'hidden';
+        function done() {
+          gate.classList.remove('show');
+          document.body.style.overflow = '';
+          try { sessionStorage.setItem('fbGateChoice', '1'); } catch (e) {}
+        }
+        document.getElementById('fbGateDismiss').addEventListener('click', done);
+        document.getElementById('fbGateOpen').addEventListener('click', function () {
+          if (/android/i.test(ua)) {
+            /* Break out of the in-app WebView into the device browser */
+            location.href = 'intent://' + location.href.replace(new RegExp('^https?://'), '') + '#Intent;scheme=https;end';
+          } else {
+            done();
+            alert('اضغط على زر ⋯ أعلى الشاشة ثم اختر «فتح في المتصفح»');
+          }
+        });
+      } catch (e) { /* never break the page */ }
+    })();
+  </script>
 
   <header class="site-header">
     <div class="container header-inner">
@@ -88,8 +153,8 @@
         <span>صمّم بنفسك</span>
       </a>
       <nav class="footer-links">
-        <a href="/privacy.html" data-i18n="footer.privacy">سياسة الخصوصية</a>
-        <a href="/en/privacy.html" data-i18n="footer.english">English</a>
+        <a href="/privacy" data-i18n="footer.privacy">سياسة الخصوصية</a>
+        <a href="/en/privacy" data-i18n="footer.english">English</a>
         <a href="https://apps.tasawehala.com/contact.html" data-i18n="footer.contact">اتصل بنا</a>
       </nav>
       <div class="footer-social">
@@ -119,7 +184,7 @@
         localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
       });
       var lBtn = document.getElementById('langToggle');
-      if (lBtn) lBtn.addEventListener('click', function(){ location.href = '/en/privacy.html'; });
+      if (lBtn) lBtn.addEventListener('click', function(){ location.href = '/en/privacy'; });
     })();
     // Offline support
     if ('serviceWorker' in navigator) {
