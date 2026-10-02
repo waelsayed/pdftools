@@ -156,6 +156,10 @@
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="icon" type="image/webp" href="/images/logo.webp" />
   <link rel="apple-touch-icon" href="/images/logo.webp" />
+
+  <!-- Google AdSense -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4009330668502369"
+     crossorigin="anonymous"></script>
 </head>
 <body>
 
@@ -174,8 +178,6 @@
   </header>
 
   <!-- ADSENSE: header banner -->
-  <div class="ad-slot container" data-ad="header" aria-hidden="true"></div>
-
   <main class="container">
 
     <section class="hero">
@@ -198,10 +200,26 @@
       </div>
     </section>
 
+    <!-- Google AdSense: single responsive unit, right where the student works -->
+    <div class="ad-slot" data-ad="main">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-4009330668502369"
+           data-ad-slot="3073383250"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+           (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </div>
+
     <section id="gallerySection" class="gallery-section hidden">
       <div class="gallery-header">
-        <h2 data-i18n="gallery.title">Added images</h2>
-        <button id="clearAll" class="text-btn" type="button" data-i18n="gallery.clear">Clear all</button>
+        <h2 data-i18n="gallery.title">الصور المضافة</h2>
+        <div class="gallery-tools">
+          <button id="reverseOrder" class="tool-btn" type="button">🔄 <span data-i18n="gallery.reverse">Reverse order</span></button>
+          <button id="clearAll" class="text-btn" type="button" data-i18n="gallery.clear">مسح الكل</button>
+        </div>
       </div>
       <p class="gallery-hint" data-i18n="gallery.hint">Drag to reorder. Tap any image to rotate or delete.</p>
       <ul id="gallery" class="gallery" aria-label="Image list"></ul>
@@ -276,9 +294,6 @@
       <div id="errorBox" class="error-box hidden" role="alert"></div>
     </section>
 
-    <!-- ADSENSE: in-content -->
-    <div class="ad-slot container" data-ad="in-content" aria-hidden="true"></div>
-
     <section class="content-section">
       <h2 data-i18n="content.h2">Why convert images to PDF?</h2>
       <p data-i18n="content.p1">
@@ -336,7 +351,6 @@
   </main>
 
   <!-- ADSENSE: footer -->
-  <div class="ad-slot container" data-ad="footer" aria-hidden="true"></div>
 
   <footer class="site-footer">
     <div class="container footer-inner">

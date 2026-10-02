@@ -135,6 +135,10 @@
     // Clear all
     clearAllBtn.addEventListener('click', clearAll);
 
+    // Reverse order
+    var reverseBtn = $('reverseOrder');
+    if (reverseBtn) reverseBtn.addEventListener('click', reverseOrder);
+
     // Settings: disable orientation when "image" size selected
     pageSizeEl.addEventListener('change', function () {
       orientationEl.disabled = pageSizeEl.value === 'image';
@@ -183,10 +187,21 @@
       animation: 150,
       ghostClass: 'sortable-ghost',
       dragClass: 'sortable-drag',
+      // Drag starts from the visible ⋮⋮ handle only: on touch screens this
+      // keeps scrolling working everywhere else on the thumbnail.
+      handle: '.thumb-handle',
       // On touch screens a small delay avoids fighting with scroll gestures.
       delay: 120,
       delayOnTouchOnly: true,
+      scroll: true,
+      scrollSensitivity: 90,
+      scrollSpeed: 12,
+      bubbleScroll: true,
+      onStart: function () {
+        gallery.classList.remove('show-hint');
+      },
       onEnd: function () {
+        gallery.classList.remove('show-hint');
         var newOrder = [];
         gallery.querySelectorAll('li.thumb').forEach(function (li) {
           var id = li.getAttribute('data-id');
@@ -319,6 +334,12 @@
     idx.className = 'thumb-index';
     idx.textContent = '';
 
+    var handle = document.createElement('span');
+    handle.className = 'thumb-handle';
+    handle.textContent = '⋮⋮';
+    handle.title = t('gallery.handle');
+    handle.setAttribute('aria-label', t('gallery.handle'));
+
     var zoomBtn = document.createElement('button');
     zoomBtn.type = 'button';
     zoomBtn.className = 'thumb-zoom';
@@ -353,6 +374,22 @@
     var actions = document.createElement('div');
     actions.className = 'thumb-actions';
 
+    // In RTL the first page is on the right, so "earlier" points right.
+    var isRtl = window.getLang() !== 'en';
+    var earlierBtn = document.createElement('button');
+    earlierBtn.type = 'button';
+    earlierBtn.textContent = isRtl ? '▶' : '◀';
+    earlierBtn.title = t('gallery.moveEarlier');
+    earlierBtn.setAttribute('aria-label', t('gallery.moveEarlier'));
+    earlierBtn.addEventListener('click', function () { moveItem(item.id, -1); });
+
+    var laterBtn = document.createElement('button');
+    laterBtn.type = 'button';
+    laterBtn.textContent = isRtl ? '◀' : '▶';
+    laterBtn.title = t('gallery.moveLater');
+    laterBtn.setAttribute('aria-label', t('gallery.moveLater'));
+    laterBtn.addEventListener('click', function () { moveItem(item.id, 1); });
+
     var rotateBtn = document.createElement('button');
     rotateBtn.type = 'button';
     rotateBtn.textContent = '⟳';
@@ -368,15 +405,46 @@
     delBtn.setAttribute('aria-label', t('gallery.delete'));
     delBtn.addEventListener('click', function () { deleteItem(item.id); });
 
+    actions.appendChild(earlierBtn);
+    actions.appendChild(laterBtn);
     actions.appendChild(rotateBtn);
     actions.appendChild(delBtn);
 
     li.appendChild(idx);
+    li.appendChild(handle);
     li.appendChild(zoomBtn);
     li.appendChild(imgWrap);
     li.appendChild(meta);
     li.appendChild(actions);
     gallery.appendChild(li);
+  }
+
+  // Re-apply the images[] order to the DOM (used by arrows + reverse).
+  function syncGalleryOrder() {
+    var map = {};
+    gallery.querySelectorAll('li.thumb').forEach(function (li) {
+      map[li.getAttribute('data-id')] = li;
+    });
+    images.forEach(function (item) {
+      if (map[item.id]) gallery.appendChild(map[item.id]);
+    });
+    renumberThumbnails();
+  }
+
+  // Move one step toward the start (dir=-1) or the end (dir=+1) of the PDF.
+  function moveItem(id, dir) {
+    var i = images.findIndex(function (x) { return x.id === id; });
+    var j = i + dir;
+    if (i < 0 || j < 0 || j >= images.length) return;
+    var tmp = images[i];
+    images[i] = images[j];
+    images[j] = tmp;
+    syncGalleryOrder();
+  }
+
+  function reverseOrder() {
+    images.reverse();
+    syncGalleryOrder();
   }
 
   function renumberThumbnails() {
@@ -443,6 +511,9 @@
     gallerySection.classList.toggle('hidden', !hasImages);
     settingsSection.classList.toggle('hidden', !hasImages);
     convertSection.classList.toggle('hidden', !hasImages);
+    // Pulse the drag handles the first time 2+ images are shown,
+    // so the student discovers reordering. Removed on first drag.
+    if (images.length > 1) gallery.classList.add('show-hint');
   }
 
   // ---------- Progress / errors ----------
