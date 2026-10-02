@@ -1,6 +1,16 @@
 /* =========================================================
    Image-to-PDF — client-side only.
-   Uses: pdf-lib (UMD) + SortableJS (UMD) loaded via CDN.
+   Uses: pdf-lib (UMD) + SortableJS (UMD) loaded via CDN,
+   heic2any lazy-loaded only when an HEIC file is added.
+   ---------------------------------------------------------
+   Image pipeline (single unified path):
+   every image goes through <canvas> before embedding, which
+   - bakes the user's rotation into the pixels (no pdf-lib
+     rotate needed — pdf-lib rotates about the image corner,
+     which misplaces the image),
+   - normalizes EXIF orientation (phone portrait photos),
+   - caps the longest edge at the chosen resolution,
+   - flattens transparency over white (documents, not photos).
    ========================================================= */
 (function () {
   'use strict';
@@ -9,6 +19,7 @@
   /** @type {Array<{id:string,file:File,name:string,url:string,width:number,height:number,rotation:number}>} */
   var images = [];
   var sortableInstance = null;
+  var heic2anyPromise = null;
 
   // ---------- DOM ----------
   var $ = function (id) { return document.getElementById(id); };
@@ -28,6 +39,7 @@
   var orientationEl = $('orientation');
   var marginsEl = $('margins');
   var qualityEl = $('quality');
+  var resolutionEl = $('resolution');
   var fileNameEl = $('fileName');
   var langToggle = $('langToggle');
   var themeToggle = $('themeToggle');
@@ -52,8 +64,12 @@
   var LETTER = { w: 612, h: 792 };
   var MARGINS = { none: 0, small: 18, large: 42 };
   var QUALITY_MAP = { high: 0.92, medium: 0.75, low: 0.55 };
+  var RESOLUTION_MAP = { large: 2480, medium: 1600, original: Infinity };
   var ACCEPTED = ['image/jpeg', 'image/png', 'image/webp'];
+  var HEIC_TYPES = ['image/heic', 'image/heif'];
+  var HEIC2ANY_URL = 'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
   var DEFAULT_BASENAME = 'ImagesToPdf';
+  var t = window.t;
 
   // ---------- Init ----------
   function init() {
@@ -167,6 +183,9 @@
       animation: 150,
       ghostClass: 'sortable-ghost',
       dragClass: 'sortable-drag',
+      // On touch screens a small delay avoids fighting with scroll gestures.
+      delay: 120,
+      delayOnTouchOnly: true,
       onEnd: function () {
         var newOrder = [];
         gallery.querySelectorAll('li.thumb').forEach(function (li) {
@@ -181,26 +200,81 @@
   }
 
   // ---------- Adding files ----------
-  function addFiles(fileList) {
+  function isHeicFile(f) {
+    if (HEIC_TYPES.indexOf(f.type) !== -1) return true;
+    return /\.hei[cf]$/i.test(f.name || '');
+  }
+
+  // Lazy-load heic2any only when the first HEIC file shows up,
+  // so JPG/PNG users never pay the ~1.3MB download.
+  function loadHeic2Any() {
+    if (heic2anyPromise) return heic2anyPromise;
+    heic2anyPromise = new Promise(function (resolve, reject) {
+      if (typeof window.heic2any !== 'undefined') { resolve(); return; }
+      var s = document.createElement('script');
+      s.src = HEIC2ANY_URL;
+      s.onload = function () { resolve(); };
+      s.onerror = function () { reject(new Error('heic2any failed to load')); };
+      document.head.appendChild(s);
+    });
+    return heic2anyPromise;
+  }
+
+  function convertHeicFile(file) {
+    return loadHeic2Any().then(function () {
+      return window.heic2any({ blob: file, toType: 'image/jpeg', quality: 0.92 });
+    }).then(function (result) {
+      var blob = Array.isArray(result) ? result[0] : result;
+      if (!blob) throw new Error('HEIC conversion returned nothing');
+      var base = (file.name || 'image').replace(/\.hei[cf]$/i, '') || 'image';
+      return new File([blob], base + '.jpg', { type: 'image/jpeg' });
+    });
+  }
+
+  async function addFiles(fileList) {
     if (!fileList || !fileList.length) return;
     hideError();
-    var validFiles = [];
+
+    var rejected = [];
+    var queue = [];
     for (var i = 0; i < fileList.length; i++) {
       var f = fileList[i];
-      if (ACCEPTED.indexOf(f.type) !== -1) validFiles.push(f);
+      if (ACCEPTED.indexOf(f.type) !== -1) {
+        queue.push({ file: f, heic: false });
+      } else if (isHeicFile(f)) {
+        queue.push({ file: f, heic: true });
+      } else {
+        rejected.push(f.name || 'file');
+      }
     }
-    if (!validFiles.length) return;
 
-    var tasks = validFiles.map(function (f) { return loadImageMeta(f); });
-    Promise.all(tasks).then(function (results) {
-      results.forEach(function (meta) {
-        if (!meta) return;
+    for (var q = 0; q < queue.length; q++) {
+      var entry = queue[q];
+      try {
+        if (entry.heic) showProgress(0, t('progress.heic'));
+        var file = entry.heic ? await convertHeicFile(entry.file) : entry.file;
+        var meta = await loadImageMeta(file);
+        if (!meta) { rejected.push(entry.file.name || 'file'); continue; }
         images.push(meta);
         renderThumb(meta);
-      });
-      updateVisibility();
-      renumberThumbnails();
-    });
+      } catch (err) {
+        console.warn('Skipping file:', entry.file && entry.file.name, err);
+        if (err && err.message === 'heic2any failed to load') {
+          showError(t('error.heicNoLib', { list: entry.file.name || 'file' }));
+          hideProgress();
+          return;
+        }
+        rejected.push(entry.file.name || 'file');
+      } finally {
+        hideProgress();
+      }
+    }
+
+    if (rejected.length) {
+      showError(t('error.invalidFiles', { list: rejected.join(', ') }));
+    }
+    updateVisibility();
+    renumberThumbnails();
   }
 
   function loadImageMeta(file) {
@@ -226,6 +300,15 @@
     });
   }
 
+  function loadHtmlImage(url) {
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      img.onload = function () { resolve(img); };
+      img.onerror = function () { reject(new Error('Failed to decode image')); };
+      img.src = url;
+    });
+  }
+
   // ---------- Rendering ----------
   function renderThumb(item) {
     var li = document.createElement('li');
@@ -240,8 +323,8 @@
     zoomBtn.type = 'button';
     zoomBtn.className = 'thumb-zoom';
     zoomBtn.textContent = '🔍';
-    zoomBtn.title = window.t('lightbox.preview');
-    zoomBtn.setAttribute('aria-label', window.t('lightbox.preview'));
+    zoomBtn.title = t('lightbox.preview');
+    zoomBtn.setAttribute('aria-label', t('lightbox.preview'));
     zoomBtn.addEventListener('click', function (e) {
       e.stopPropagation();
       openLightbox(item.id);
@@ -273,16 +356,16 @@
     var rotateBtn = document.createElement('button');
     rotateBtn.type = 'button';
     rotateBtn.textContent = '⟳';
-    rotateBtn.title = 'تدوير 90°';
-    rotateBtn.setAttribute('aria-label', 'Rotate 90 degrees');
+    rotateBtn.title = t('gallery.rotate');
+    rotateBtn.setAttribute('aria-label', t('gallery.rotate'));
     rotateBtn.addEventListener('click', function () { rotateItem(item.id); });
 
     var delBtn = document.createElement('button');
     delBtn.type = 'button';
     delBtn.className = 'del';
     delBtn.textContent = '✕';
-    delBtn.title = 'حذف';
-    delBtn.setAttribute('aria-label', 'Delete');
+    delBtn.title = t('gallery.delete');
+    delBtn.setAttribute('aria-label', t('gallery.delete'));
     delBtn.addEventListener('click', function () { deleteItem(item.id); });
 
     actions.appendChild(rotateBtn);
@@ -303,6 +386,21 @@
     });
   }
 
+  // Dimensions label follows the rotation, since rotation is baked
+  // into the PDF output.
+  function updateThumbDims(id) {
+    var item = images.find(function (x) { return x.id === id; });
+    if (!item) return;
+    var li = gallery.querySelector('li[data-id="' + id + '"]');
+    if (!li) return;
+    var dimsEl = li.querySelector('.thumb-dims');
+    if (!dimsEl) return;
+    var r = ((item.rotation % 360) + 360) % 360;
+    dimsEl.textContent = (r === 90 || r === 270)
+      ? (item.height + ' × ' + item.width)
+      : (item.width + ' × ' + item.height);
+  }
+
   // ---------- Item actions ----------
   function rotateItem(id) {
     var item = images.find(function (x) { return x.id === id; });
@@ -313,6 +411,7 @@
       var img = li.querySelector('.thumb-img-wrap img');
       if (img) img.style.transform = 'rotate(' + item.rotation + 'deg)';
     }
+    updateThumbDims(id);
   }
 
   function deleteItem(id) {
@@ -377,8 +476,11 @@
     hideError();
     hideProgress();
     convertBtn.disabled = true;
+    showProgress(2, t('progress.preparing'));
 
     var quality = QUALITY_MAP[qualityEl.value] || 0.92;
+    var maxDim = RESOLUTION_MAP[resolutionEl.value];
+    if (!maxDim) maxDim = 2480;
     var pageSizeMode = pageSizeEl.value;
     var orientation = orientationEl.disabled ? 'portrait' : orientationEl.value;
     var margin = MARGINS[marginsEl.value] || 0;
@@ -386,7 +488,6 @@
 
     try {
       var PDFDocument = PDFLib.PDFDocument;
-      var degrees = PDFLib.degrees;
       var pdfDoc = await PDFDocument.create();
 
       var total = images.length;
@@ -399,9 +500,11 @@
         await new Promise(function (r) { setTimeout(r, 0); });
 
         try {
-          var embedded = await embedImageItem(pdfDoc, item, quality);
-          if (!embedded) { skipped.push(item.name); continue; }
-          addImagePage(pdfDoc, embedded, item, {
+          // Single unified path: canvas normalizes rotation + EXIF +
+          // resolution, then we embed the resulting JPEG bytes.
+          var prepared = await prepareImageItem(item, quality, maxDim);
+          var embedded = await pdfDoc.embedJpg(prepared.data);
+          addImagePage(pdfDoc, embedded, {
             pageSizeMode: pageSizeMode,
             orientation: orientation,
             margin: margin
@@ -449,89 +552,65 @@
     }
   }
 
-  async function embedImageItem(pdfDoc, item, quality) {
-    var file = item.file;
-    var type = file.type || '';
+  /**
+   * Normalize one image through <canvas> and return JPEG bytes.
+   * - rotation is baked into the pixels (drawImage rotate in pdf-lib
+   *   pivots around the image corner and misplaces the page),
+   * - EXIF orientation is applied by the browser when drawing, so the
+   *   output has no EXIF tag for PDF viewers to misread,
+   * - the longest edge is capped at maxDim,
+   * - transparency is flattened over white.
+   * Returns { data: ArrayBuffer, width, height } of the final image.
+   */
+  function prepareImageItem(item, quality, maxDim) {
+    return loadHtmlImage(item.url).then(function (img) {
+      var rot = ((item.rotation % 360) + 360) % 360;
+      var w = img.naturalWidth || img.width;
+      var h = img.naturalHeight || img.height;
 
-    if (type === 'image/png') {
-      var pngBytes = await readAsArrayBuffer(file);
-      return await pdfDoc.embedPng(pngBytes);
-    }
-    if (type === 'image/jpeg' || type === 'image/jpg') {
-      if (quality >= 0.9) {
-        var jpgBytes = await readAsArrayBuffer(file);
-        return await pdfDoc.embedJpg(jpgBytes);
-      }
-      var jpegData = await recompressToJpeg(item, quality);
-      return await pdfDoc.embedJpg(jpegData);
-    }
-    var data = await recompressToJpeg(item, quality);
-    return await pdfDoc.embedJpg(data);
-  }
+      // Final (post-rotation) dimensions.
+      var outW = (rot === 90 || rot === 270) ? h : w;
+      var outH = (rot === 90 || rot === 270) ? w : h;
 
-  function readAsArrayBuffer(file) {
-    return new Promise(function (resolve, reject) {
-      var r = new FileReader();
-      r.onload = function () { resolve(r.result); };
-      r.onerror = function () { reject(r.error); };
-      r.readAsArrayBuffer(file);
+      var scale = 1;
+      var longest = Math.max(outW, outH);
+      if (longest > maxDim) scale = maxDim / longest;
+
+      var cw = Math.max(1, Math.round(outW * scale));
+      var ch = Math.max(1, Math.round(outH * scale));
+
+      var canvas = document.createElement('canvas');
+      canvas.width = cw;
+      canvas.height = ch;
+      var ctx = canvas.getContext('2d');
+
+      // White background FIRST, in untransformed space, so transparent
+      // PNGs never end up with black regions after rotation.
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, cw, ch);
+
+      // Rotate about the canvas center, draw the image centered.
+      ctx.save();
+      ctx.translate(cw / 2, ch / 2);
+      if (rot) ctx.rotate(rot * Math.PI / 180);
+      var dw = w * scale;
+      var dh = h * scale;
+      ctx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
+      ctx.restore();
+
+      return new Promise(function (resolve, reject) {
+        canvas.toBlob(function (blob) {
+          if (!blob) { reject(new Error('Failed to encode image')); return; }
+          blob.arrayBuffer().then(function (buf) {
+            resolve({ data: buf, width: cw, height: ch });
+          }, reject);
+        }, 'image/jpeg', quality);
+      });
     });
   }
 
-  function recompressToJpeg(item, quality) {
-    return new Promise(function (resolve, reject) {
-      var img = new Image();
-      img.onload = function () {
-        try {
-          var rot = item.rotation % 360;
-          var w = img.naturalWidth || img.width;
-          var h = img.naturalHeight || img.height;
-
-          var canvas = document.createElement('canvas');
-          var ctx = canvas.getContext('2d');
-
-          if (rot === 90 || rot === 270) {
-            canvas.width = h;
-            canvas.height = w;
-          } else {
-            canvas.width = w;
-            canvas.height = h;
-          }
-
-          ctx.save();
-          if (rot === 90) {
-            ctx.translate(canvas.width, 0);
-            ctx.rotate(Math.PI / 2);
-          } else if (rot === 180) {
-            ctx.translate(canvas.width, canvas.height);
-            ctx.rotate(Math.PI);
-          } else if (rot === 270) {
-            ctx.translate(0, canvas.height);
-            ctx.rotate(-Math.PI / 2);
-          }
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(img, 0, 0, w, h);
-          ctx.restore();
-
-          var dataUrl = canvas.toDataURL('image/jpeg', quality);
-          var base64 = dataUrl.split(',')[1];
-          var binary = atob(base64);
-          var len = binary.length;
-          var buf = new Uint8Array(len);
-          for (var i = 0; i < len; i++) buf[i] = binary.charCodeAt(i);
-          resolve(buf.buffer);
-        } catch (err) {
-          reject(err);
-        }
-      };
-      img.onerror = function () { reject(new Error('Failed to decode image')); };
-      img.src = item.url;
-    });
-  }
-
-  function addImagePage(pdfDoc, embedded, item, opts) {
-    var deg = item.rotation % 360;
+  function addImagePage(pdfDoc, embedded, opts) {
+    // embedded dims are already final (rotation baked, EXIF normalized).
     var imgW = embedded.width;
     var imgH = embedded.height;
 
@@ -562,18 +641,11 @@
     var x = (pageW - drawW) / 2;
     var y = (pageH - drawH) / 2;
 
-    page.drawImage(embedded, {
-      x: x,
-      y: y,
-      width: drawW,
-      height: drawH,
-      rotate: PDFLib.degrees(deg)
-    });
+    // No rotate here: rotation is already baked into the pixels.
+    page.drawImage(embedded, { x: x, y: y, width: drawW, height: drawH });
   }
 
   // ---------- Filename ----------
-   // ---------- Filename ----------
-   // ---------- Filename ----------
   function buildFilename() {
     // Sanitize whatever the user typed (if anything).
     var base = '';
@@ -603,6 +675,7 @@
 
   // ---------- Lightbox / Preview ----------
   function openLightbox(id) {
+    if (!lightbox) return;
     var idx = images.findIndex(function (x) { return x.id === id; });
     if (idx === -1) return;
     currentPreviewId = id;
@@ -656,6 +729,7 @@
       var thumbImg = li.querySelector('.thumb-img-wrap img');
       if (thumbImg) thumbImg.style.transform = 'rotate(' + item.rotation + 'deg)';
     }
+    updateThumbDims(item.id);
   }
 
   function lightboxDelete() {

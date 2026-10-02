@@ -2,21 +2,30 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>https://example.com/</loc>
-    <xhtml:link rel="alternate" hreflang="ar" href="https://example.com/" />
-    <xhtml:link rel="alternate" hreflang="en" href="https://example.com/en/" />
+    <loc>https://pdf.tasawehala.com/</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://pdf.tasawehala.com/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdf.tasawehala.com/en/" />
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://example.com/en/</loc>
-    <xhtml:link rel="alternate" hreflang="ar" href="https://example.com/" />
-    <xhtml:link rel="alternate" hreflang="en" href="https://example.com/en/" />
+    <loc>https://pdf.tasawehala.com/en/</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://pdf.tasawehala.com/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdf.tasawehala.com/en/" />
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://example.com/privacy.html</loc>
+    <loc>https://pdf.tasawehala.com/privacy.html</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://pdf.tasawehala.com/privacy.html" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdf.tasawehala.com/en/privacy.html" />
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://pdf.tasawehala.com/en/privacy.html</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://pdf.tasawehala.com/privacy.html" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdf.tasawehala.com/en/privacy.html" />
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>

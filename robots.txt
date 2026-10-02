@@ -1,6 +1,4 @@
 User-agent: *
 Allow: /
-Disallow: /js/
-Disallow: /css/
 
-Sitemap: https://example.com/sitemap.xml
+Sitemap: https://pdf.tasawehala.com/sitemap.xml
