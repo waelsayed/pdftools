@@ -572,6 +572,12 @@
     li.appendChild(meta);
     li.appendChild(actions);
     gallery.appendChild(li);
+
+    // Apply a previously-saved rotation (e.g. after session restore).
+    if (item.rotation) {
+      img.style.transform = 'rotate(' + item.rotation + 'deg)';
+      updateThumbDims(item.id);
+    }
   }
 
   // Re-apply the images[] order to the DOM (used by arrows + reverse).
