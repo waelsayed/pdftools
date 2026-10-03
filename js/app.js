@@ -41,6 +41,10 @@
   var qualityEl = $('quality');
   var resolutionEl = $('resolution');
   var fileNameEl = $('fileName');
+  var pageNumbersEl = $('pageNumbers');
+  var sessionGate = $('sessionGate');
+  var sessionRestoreBtn = $('sessionRestore');
+  var sessionDiscardBtn = $('sessionDiscard');
   var langToggle = $('langToggle');
   var themeToggle = $('themeToggle');
   var yearEl = $('year');
@@ -80,6 +84,147 @@
     initSortable();
     if (yearEl) yearEl.textContent = new Date().getFullYear();
     updateVisibility();
+    maybeRestoreSession();
+    // If the Facebook gate is dismissed later, show the pending session choice.
+    var fbGateEl = document.getElementById('fbGate');
+    if (fbGateEl && window.MutationObserver) {
+      new MutationObserver(function () {
+        if (!fbGateEl.classList.contains('show')) maybeShowPendingSession();
+      }).observe(fbGateEl, { attributes: true, attributeFilter: ['class'] });
+    }
+  }
+
+  // ---------- Session persistence (IndexedDB, on-device only) ----------
+  // Auto-saves images + order + settings so an accidental close loses nothing.
+  // Blobs stay in the browser: consistent with the "files never leave device" promise.
+  var IDB_NAME = 'pdftools';
+  var IDB_STORE = 'kv';
+  var saveTimer = null;
+  var pendingSession = null;
+
+  function idbOpen() {
+    return new Promise(function (resolve, reject) {
+      try {
+        var req = indexedDB.open(IDB_NAME, 1);
+        req.onupgradeneeded = function () { req.result.createObjectStore(IDB_STORE); };
+        req.onsuccess = function () { resolve(req.result); };
+        req.onerror = function () { reject(req.error); };
+      } catch (e) { reject(e); }
+    });
+  }
+  function idbTx(mode, fn) {
+    return idbOpen().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var tx;
+        try {
+          tx = db.transaction(IDB_STORE, mode);
+          fn(tx.objectStore(IDB_STORE), resolve, reject);
+          tx.onerror = function () { reject(tx.error); };
+        } catch (e) { reject(e); }
+      });
+    }).catch(function () { /* storage unavailable: stay silent */ });
+  }
+  function idbPut(key, value) {
+    return idbTx('readwrite', function (store, resolve, reject) {
+      var req = store.put(value, key);
+      req.onsuccess = function () { resolve(); };
+      req.onerror = function () { reject(req.error); };
+    });
+  }
+  function idbGet(key) {
+    return idbTx('readonly', function (store, resolve, reject) {
+      var req = store.get(key);
+      req.onsuccess = function () { resolve(req.result || null); };
+      req.onerror = function () { reject(req.error); };
+    });
+  }
+  function idbDel(key) {
+    return idbTx('readwrite', function (store, resolve, reject) {
+      var req = store.delete(key);
+      req.onsuccess = function () { resolve(); };
+      req.onerror = function () { reject(req.error); };
+    });
+  }
+
+  function collectSettings() {
+    return {
+      pageSize: pageSizeEl ? pageSizeEl.value : 'a4',
+      orientation: orientationEl ? orientationEl.value : 'portrait',
+      margins: marginsEl ? marginsEl.value : 'none',
+      quality: qualityEl ? qualityEl.value : 'high',
+      resolution: resolutionEl ? resolutionEl.value : 'large',
+      pageNumbers: !!(pageNumbersEl && pageNumbersEl.checked),
+      fileName: fileNameEl ? fileNameEl.value : ''
+    };
+  }
+  function applySettings(st) {
+    if (!st) return;
+    if (pageSizeEl && st.pageSize) pageSizeEl.value = st.pageSize;
+    if (orientationEl && st.orientation) orientationEl.value = st.orientation;
+    if (marginsEl && st.margins) marginsEl.value = st.margins;
+    if (qualityEl && st.quality) qualityEl.value = st.quality;
+    if (resolutionEl && st.resolution) resolutionEl.value = st.resolution;
+    if (pageNumbersEl) pageNumbersEl.checked = !!st.pageNumbers;
+    if (fileNameEl && typeof st.fileName === 'string') fileNameEl.value = st.fileName;
+  }
+  function scheduleSave() {
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveSession, 800);
+  }
+  function saveSession() {
+    if (!images.length) { idbDel('session'); return; }
+    idbPut('session', {
+      v: 1,
+      savedAt: Date.now(),
+      images: images.map(function (it) {
+        return { id: it.id, name: it.name, width: it.width, height: it.height,
+                 rotation: it.rotation, blob: it.file };
+      }),
+      settings: collectSettings()
+    });
+  }
+  function maybeRestoreSession() {
+    idbGet('session').then(function (s) {
+      if (!s || !s.images || !s.images.length || images.length) return;
+      if (!sessionGate) return;
+      // Don't fight the Facebook gate: it blocks first, session choice comes after.
+      var fbGate = document.getElementById('fbGate');
+      if (fbGate && fbGate.classList.contains('show')) {
+        pendingSession = s;
+        return;
+      }
+      pendingSession = s;
+      sessionGate.classList.add('show');
+    });
+  }
+  // If the FB gate was dismissed, the pending session choice shows afterwards.
+  function maybeShowPendingSession() {
+    if (pendingSession && sessionGate && !sessionGate.classList.contains('show')) {
+      sessionGate.classList.add('show');
+    }
+  }
+  function restoreSession() {
+    var s = pendingSession;
+    pendingSession = null;
+    if (sessionGate) sessionGate.classList.remove('show');
+    if (!s || !s.images) return;
+    s.images.forEach(function (sv) {
+      if (!sv.blob) return;
+      var url = URL.createObjectURL(sv.blob);
+      var item = { id: sv.id, file: sv.blob, name: sv.name || 'image', url: url,
+                   width: sv.width || 0, height: sv.height || 0, rotation: sv.rotation || 0 };
+      images.push(item);
+      renderThumb(item);
+    });
+    applySettings(s.settings);
+    updateVisibility();
+    renumberThumbnails();
+    scheduleSave();
+  }
+  function discardSession() {
+    pendingSession = null;
+    if (sessionGate) sessionGate.classList.remove('show');
+    idbDel('session');
   }
 
   // ---------- Theme / Lang persistence ----------
@@ -138,6 +283,14 @@
     // Reverse order
     var reverseBtn = $('reverseOrder');
     if (reverseBtn) reverseBtn.addEventListener('click', reverseOrder);
+
+    // Session restore / discard
+    if (sessionRestoreBtn) sessionRestoreBtn.addEventListener('click', restoreSession);
+    if (sessionDiscardBtn) sessionDiscardBtn.addEventListener('click', discardSession);
+
+    // Any settings change re-saves the session
+    if (settingsSection) settingsSection.addEventListener('change', scheduleSave);
+    if (fileNameEl) fileNameEl.addEventListener('input', scheduleSave);
 
     // Settings: disable orientation when "image" size selected
     pageSizeEl.addEventListener('change', function () {
@@ -210,6 +363,7 @@
         });
         images = newOrder;
         renumberThumbnails();
+        scheduleSave();
       }
     });
   }
@@ -290,6 +444,7 @@
     }
     updateVisibility();
     renumberThumbnails();
+    scheduleSave();
   }
 
   function loadImageMeta(file) {
@@ -440,11 +595,13 @@
     images[i] = images[j];
     images[j] = tmp;
     syncGalleryOrder();
+    scheduleSave();
   }
 
   function reverseOrder() {
     images.reverse();
     syncGalleryOrder();
+    scheduleSave();
   }
 
   function renumberThumbnails() {
@@ -480,6 +637,7 @@
       if (img) img.style.transform = 'rotate(' + item.rotation + 'deg)';
     }
     updateThumbDims(id);
+    scheduleSave();
   }
 
   function deleteItem(id) {
@@ -492,6 +650,7 @@
     if (li && li.parentNode) li.parentNode.removeChild(li);
     updateVisibility();
     renumberThumbnails();
+    scheduleSave();
   }
 
   function clearAll() {
@@ -503,6 +662,7 @@
     hideError();
     updateVisibility();
     hideProgress();
+    idbDel('session');
   }
 
   // ---------- Visibility ----------
@@ -561,6 +721,13 @@
       var PDFDocument = PDFLib.PDFDocument;
       var pdfDoc = await PDFDocument.create();
 
+      var showNums = !!(pageNumbersEl && pageNumbersEl.checked);
+      var numFont = null;
+      if (showNums) {
+        try { numFont = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica); }
+        catch (e) { showNums = false; }
+      }
+
       var total = images.length;
       for (var i = 0; i < total; i++) {
         var item = images[i];
@@ -578,7 +745,10 @@
           addImagePage(pdfDoc, embedded, {
             pageSizeMode: pageSizeMode,
             orientation: orientation,
-            margin: margin
+            margin: margin,
+            showPageNum: showNums,
+            pageNum: i + 1,
+            numFont: numFont
           });
         } catch (err) {
           console.warn('Skipping image:', item.name, err);
@@ -714,6 +884,25 @@
 
     // No rotate here: rotation is already baked into the pixels.
     page.drawImage(embedded, { x: x, y: y, width: drawW, height: drawH });
+
+    // Optional page number: white pill at the bottom center, readable on any background.
+    if (opts.showPageNum && opts.numFont) {
+      var label = String(opts.pageNum);
+      var fs = 11;
+      var tw = opts.numFont.widthOfTextAtSize(label, fs);
+      var pw = tw + 16;
+      var ph = 20;
+      var px = (pageW - pw) / 2;
+      var py = 16;
+      page.drawRectangle({
+        x: px, y: py, width: pw, height: ph,
+        color: PDFLib.rgb(1, 1, 1), opacity: 0.92
+      });
+      page.drawText(label, {
+        x: px + (pw - tw) / 2, y: py + 6, size: fs,
+        font: opts.numFont, color: PDFLib.rgb(0.4, 0.4, 0.4)
+      });
+    }
   }
 
   // ---------- Filename ----------

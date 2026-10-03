@@ -165,6 +165,41 @@
 </head>
 <body>
 
+  <!-- Session restore gate: blocks until the user chooses -->
+  <style>
+    .session-gate { display: none; position: fixed; inset: 0; z-index: 1000;
+      background: rgba(10, 14, 30, 0.62); align-items: center; justify-content: center; padding: 20px; }
+    .session-gate.show { display: flex; }
+    .session-gate-card { background: var(--surface, #fff); color: var(--text, #111);
+      border-radius: 18px; max-width: 430px; width: 100%; padding: 28px 24px;
+      text-align: center; box-shadow: 0 24px 70px rgba(0,0,0,.35);
+      border: 1px solid var(--border, #e5e7eb); }
+    .session-gate-icon { font-size: 2.4rem; line-height: 1; }
+    .session-gate-card h2 { font-size: 1.15rem; margin: 10px 0 8px; }
+    .session-gate-card p { font-size: 0.92rem; color: var(--text-muted, #555);
+      line-height: 1.8; margin: 0 0 6px; }
+    .session-gate-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+    .session-gate-restore { background: var(--primary, #1a73e8); color: #fff; border: none;
+      border-radius: 10px; padding: 13px; font-size: 1rem; font-weight: 700;
+      cursor: pointer; font-family: inherit; }
+    .session-gate-restore:active { transform: scale(.98); }
+    .session-gate-new { background: none; border: 1px solid var(--border, #e5e7eb);
+      border-radius: 10px; cursor: pointer; color: var(--text, #111);
+      font-size: 0.95rem; padding: 11px; font-family: inherit; }
+  </style>
+  <div class="session-gate" id="sessionGate" role="dialog" aria-modal="true" aria-labelledby="sessionGateTitle">
+    <div class="session-gate-card">
+      <div class="session-gate-icon">📂</div>
+      <h2 id="sessionGateTitle" data-i18n="session.title">جلسة سابقة محفوظة</h2>
+      <p data-i18n="session.prompt">لقينا صورك وإعداداتك من آخر مرة — عايز تكمل من حيث توقفت؟</p>
+      <div class="session-gate-actions">
+        <button type="button" class="session-gate-restore" id="sessionRestore" data-i18n="session.restore">↩️ استعادة الجلسة</button>
+        <button type="button" class="session-gate-new" id="sessionDiscard" data-i18n="session.discard">🆕 بدء جلسة جديدة</button>
+      </div>
+    </div>
+  </div>
+
+
   <!-- Facebook in-app gate: blocks until the user chooses -->
   <style>
     .fb-gate { display: none; position: fixed; inset: 0; z-index: 1000;
@@ -246,6 +281,8 @@
 
   <!-- ADSENSE: header banner -->
   <main class="container">
+
+
 
     <section class="hero">
       <h1 data-i18n="hero.title">حوّل صورك إلى ملف PDF واحد</h1>
@@ -341,6 +378,11 @@
             <option value="medium" data-i18n="settings.resolution.medium">متوسطة (حتى 1600px)</option>
             <option value="original" data-i18n="settings.resolution.original">الأصلية (بدون تصغير)</option>
           </select>
+        </label>
+
+        <label class="field check-field">
+          <input id="pageNumbers" type="checkbox" />
+          <span data-i18n="settings.pageNumbers">🔢 ترقيم الصفحات</span>
         </label>
 
       </div>

@@ -241,6 +241,11 @@ a:hover { text-decoration: underline; }
 .content-section li { margin-bottom: 6px; }
 
 
+
+/* ---------- Checkbox field ---------- */
+.check-field { display: flex !important; align-items: center; gap: 10px; cursor: pointer; }
+.check-field input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; }
+
 /* ---------- FAQ (SEO) ---------- */
 .faq-section { padding: 8px 0 32px; max-width: 820px; margin: 0 auto; }
 .faq-section h2 { font-size: 1.4rem; margin: 0 0 16px; }
